@@ -1,15 +1,13 @@
 import socket
 import threading
-import multiprocessing
+from TaskProcessor import TaskProcessor
 
 class Server:
     def __init__(self, host='127.0.0.1', port=9999):
         self.host = host
         self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def tarea(self, num):
-        return num * num
+        self.task_processor = TaskProcessor()
 
     def handle_client(self, client_socket):
         try:
@@ -18,12 +16,8 @@ class Server:
                 return
 
             num_range = range(int(data.decode()))
-
-            with multiprocessing.Pool(processes=4) as pool:
-                async_result = pool.map_async(self.tarea, num_range)
-                resultados = async_result.get()
-
-            client_socket.send(str(resultados).encode())
+            results = self.task_processor.process_tasks(num_range)
+            client_socket.send(str(results).encode())
         finally:
             client_socket.close()
 
