@@ -11,6 +11,7 @@
 
 # IMPORTACIÓN DE LIBRERÍAS
 import socket   # Librería para la conexión entre el broker y los nodos de procesamiento.
+import struct   # Librería para el manejo de datos binarios.
 
 class Broker:
 
@@ -33,7 +34,28 @@ class Broker:
     except socket.error as e:
         print(f"Error en la conexión del cliente: {e}")
         return None
+      
+  # Método para recibir un archivo
+  def RecibirArchivo(self, conn):
+    try:
+      # Recibir el tamaño del archivo
+      file_size = conn.recv(4)
+      file_size = struct.unpack("!I", file_size)[0]
+      data = b''
+      while len(data) < file_size:
+        packet = conn.recv(4096)
+        if not packet:
+          break
+        data += packet
+      with open("resultado.mp4", "wb") as f:
+        f.write(data)
+        print("Archivo recibido correctamente")
+    except Exception as e:
+      print(f"Error al recibir el archivo: {e}")
 
 if __name__ == "__main__":
   broker = Broker()
-  broker.PermitirConexionCliente()
+  conn = broker.PermitirConexionCliente()
+  if conn:
+    broker.RecibirArchivo(conn)
+    conn.close()
