@@ -50,12 +50,28 @@ class Broker:
       with open("resultado.mp4", "wb") as f:
         f.write(data)
         print("Archivo recibido correctamente")
+      return "resultado.mp4"
     except Exception as e:
       print(f"Error al recibir el archivo: {e}")
+      return None
+  # Método para permitir la conexión de los nodos de procesamiento
+    
+  def PermitirConexionNodo(self):
+    try:
+      # Creación y configuración del servidor usando create_server
+      with socket.create_server((self.host, self.port)) as s:
+        print("Esperando conexión del nodo de procesamiento...")
+        conn, addr = s.accept()  # Aceptar la conexión
+        print(f"Conexión establecida con el nodo de procesamiento: {addr}")
+        return conn
+    except socket.error as e:
+      print(f"Error en la conexión del nodo de procesamiento: {e}")
+      return None
+    
 
 if __name__ == "__main__":
   broker = Broker()
   conn = broker.PermitirConexionCliente()
   if conn:
-    broker.RecibirArchivo(conn)
-    conn.close()
+    video = broker.RecibirArchivo(conn)
+    broker.PermitirConexionNodo()

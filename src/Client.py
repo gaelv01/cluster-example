@@ -1,7 +1,7 @@
 # PROGRAMA DEL CLIENTE PARA LA CONEXIÓN CON EL BROKER
 # El cliente realiza únicamente tres acciones:
 # 1. Conectarse al broker
-# 2. Insertar un video de 15 segundos
+# 2. Enviar un archivo (video) al broker
 # 3. Recibir el video procesado por el broker y los nodos de procesamiento.
 
 # IMPORTACIÓN DE LIBRERÍAS
@@ -21,7 +21,6 @@ class Cliente:
   ## MÉTODOS ##
 
   # Método para conectarse al broker
-
   def Conectar(self):
     try:
       # Creación y conexión del socket con el broker
@@ -32,7 +31,7 @@ class Cliente:
       print(f"Error al conectar con el broker: {e}")
       return None
     
-  # Método para enviar un archivo
+  # Método para enviar un archivo (video)
   def EnviarArchivo(self, conn):
     try:
       with open(self.archivo, "rb") as f:
@@ -49,6 +48,6 @@ class Cliente:
 
 if __name__ == "__main__":
   cliente = Cliente()
-  s = cliente.Conectar()
-  if s:
-    cliente.EnviarArchivo(s)
+  conn = cliente.Conectar()
+  if conn:
+    cliente.EnviarArchivo(conn)
