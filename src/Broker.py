@@ -19,22 +19,29 @@ class Broker:
   def __init__(self):
     self.host = "localhost" # Dirección IP del broker
     self.port = 5000        # Puerto de conexión del broker
+    self.video = None       # Atributo para almacenar el video recibido
 
-  ## MÉTODOS ##
-
-  # Método para permitir la conexión del cliente
-  def PermitirConexionCliente(self):
+  # Método genérico para permitir la conexión
+  def PermitirConexion(self, tipo):
     try:
       # Creación y configuración del servidor usando create_server
       with socket.create_server((self.host, self.port)) as s:
-        print("Esperando conexión del cliente...")
+        print(f"Esperando conexión del {tipo}...")
         conn, addr = s.accept()  # Aceptar la conexión
-        print(f"Conexión establecida con el cliente: {addr}")
+        print(f"Conexión establecida con el {tipo}: {addr}")
         return conn
     except socket.error as e:
-        print(f"Error en la conexión del cliente: {e}")
-        return None
-      
+      print(f"Error en la conexión del {tipo}: {e}")
+      return None
+
+  # Método para permitir la conexión del cliente
+  def PermitirConexionCliente(self):
+    return self.PermitirConexion("cliente")
+
+  # Método para permitir la conexión del nodo de procesamiento
+  def PermitirConexionNodo(self):
+    return self.PermitirConexion("nodo de procesamiento")
+
   # Método para recibir un archivo
   def RecibirArchivo(self, conn):
     try:
@@ -47,31 +54,17 @@ class Broker:
         if not packet:
           break
         data += packet
-      with open("resultado.mp4", "wb") as f:
+      self.video = data  # Almacenar el video recibido en el atributo
+      with open("video_recibido.mp4", "wb") as f:
         f.write(data)
         print("Archivo recibido correctamente")
-      return "resultado.mp4"
     except Exception as e:
       print(f"Error al recibir el archivo: {e}")
-      return None
-  # Método para permitir la conexión de los nodos de procesamiento
-    
-  def PermitirConexionNodo(self):
-    try:
-      # Creación y configuración del servidor usando create_server
-      with socket.create_server((self.host, self.port)) as s:
-        print("Esperando conexión del nodo de procesamiento...")
-        conn, addr = s.accept()  # Aceptar la conexión
-        print(f"Conexión establecida con el nodo de procesamiento: {addr}")
-        return conn
-    except socket.error as e:
-      print(f"Error en la conexión del nodo de procesamiento: {e}")
-      return None
-    
+      self.video = None
 
 if __name__ == "__main__":
   broker = Broker()
   conn = broker.PermitirConexionCliente()
   if conn:
-    video = broker.RecibirArchivo(conn)
+    broker.RecibirArchivo(conn)
     broker.PermitirConexionNodo()
