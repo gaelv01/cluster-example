@@ -23,6 +23,8 @@ class Broker:
     self.port = 5000        # Puerto de conexión del broker
     self.video = None       # Atributo para almacenar el video recibido
     self.nodos_conectados = 0 # Contador de nodos conectados
+    self.direcciones_nodos = {} # Diccionario para almacenar las direcciones de los nodos conectados
+    self.partes_video = [] # Lista para almacenar las partes del video
 
   # Método genérico para permitir la conexión
   def PermitirConexion(self, tipo):
@@ -34,6 +36,7 @@ class Broker:
         print(f"Conexión establecida con el {tipo}: {addr}")
         if tipo == "nodo de procesamiento":
           self.nodos_conectados += 1  # Incrementar el contador de nodos conectados
+          self.direcciones_nodos[self.nodos_conectados] = conn
         return conn
     except socket.error as e:
       print(f"Error en la conexión del {tipo}: {e}")
@@ -46,6 +49,20 @@ class Broker:
   # Método para permitir la conexión del nodo de procesamiento
   def PermitirConexionNodo(self):
     return self.PermitirConexion("nodo de procesamiento")
+
+  # Método para enviar un archivo (video)
+  def EnviarArchivo(self, conn, archivo):
+    try:
+      with open(archivo, "rb") as f:
+        data = f.read()
+        # Empaquetar el tamaño del archivo y los datos
+        file_size = struct.pack("!I", len(data))
+        conn.sendall(file_size + data)
+        print("Archivo enviado correctamente")
+    except FileNotFoundError:
+      print("Archivo no encontrado")
+    except Exception as e:
+      print(f"Error al enviar el archivo: {e}")
 
   # Método para recibir un archivo
   def RecibirArchivo(self, conn):
@@ -103,6 +120,7 @@ class Broker:
       
         out.release()
         print(f"Parte {i+1} del video dividida correctamente y guardada en {part_filename}")
+        self.partes_video.append(part_filename)
 
     except Exception as e:
       print(f"Error al dividir el video: {e}")
@@ -123,4 +141,7 @@ if __name__ == "__main__":
         else:
           break
       broker.DividirVideo()
+      for i in range(broker.nodos_conectados):
+        conn_nodo = broker.direcciones_nodos[i+1]
+        broker.EnviarArchivo(conn_nodo, broker.partes_video[i])
         

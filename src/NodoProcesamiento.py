@@ -10,6 +10,7 @@
 
 # IMPORTACIÓN DE LIBRERÍAS
 import socket   # Librería para la conexión entre el nodo de procesamiento y el broker.
+import struct   # Librería para el manejo de datos binarios.
 
 class NodoProcesamiento:
 
@@ -32,7 +33,32 @@ class NodoProcesamiento:
       print(f"Error al conectar con el broker: {e}")
       return None
     
+  # Método para recibir un archivo (video)
+  def RecibirArchivo(self, conn):
+    try:
+      # Recibir el tamaño del archivo
+      file_size = conn.recv(4)
+      file_size = struct.unpack("!I", file_size)[0]
+      data = b''
+      while len(data) < file_size:
+        packet = conn.recv(4096)
+        if not packet:
+          break
+        data += packet # Almacenar el video recibido en el atributo
+      with open("parte_recv.mp4", "wb") as f:
+        f.write(data)
+        print("Archivo recibido correctamente")
+        self.video = f.name
+      return True
+    except Exception as e:
+      print(f"Error al recibir el archivo: {e}")
+      self.video = None
+      return False
+    
     
 if __name__ == "__main__":
   nodo = NodoProcesamiento()
   conn = nodo.Conectar()
+  if conn:
+    nodo.RecibirArchivo(conn)
+    conn.close()
