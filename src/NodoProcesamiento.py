@@ -36,6 +36,11 @@ class NodoProcesamiento:
   # Método para recibir un archivo (video)
   def RecibirArchivo(self, conn):
     try:
+      # Recibir el tamaño del nombre del archivo
+      file_name_size = conn.recv(4)
+      file_name_size = struct.unpack("!I", file_name_size)[0]
+      # Recibir el nombre del archivo
+      file_name = conn.recv(file_name_size).decode()
       # Recibir el tamaño del archivo
       file_size = conn.recv(4)
       file_size = struct.unpack("!I", file_size)[0]
@@ -45,7 +50,7 @@ class NodoProcesamiento:
         if not packet:
           break
         data += packet # Almacenar el video recibido en el atributo
-      with open("parte_recv.mp4", "wb") as f:
+      with open(file_name, "wb") as f:
         f.write(data)
         print("Archivo recibido correctamente")
         self.video = f.name

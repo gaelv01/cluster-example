@@ -32,13 +32,15 @@ class Cliente:
       return None
     
   # Método para enviar un archivo (video)
-  def EnviarArchivo(self, conn):
+  def EnviarArchivo(self, conn, nombre_destino):
     try:
       with open(self.archivo, "rb") as f:
         data = f.read()
-        # Empaquetar el tamaño del archivo y los datos
+        # Empaquetar el tamaño del archivo, los datos y el nombre del archivo
         file_size = struct.pack("!I", len(data))
-        conn.sendall(file_size + data)
+        file_name = nombre_destino.encode()
+        file_name_size = struct.pack("!I", len(file_name))
+        conn.sendall(file_name_size + file_name + file_size + data)
         print("Archivo enviado correctamente")
     except FileNotFoundError:
       print("Archivo no encontrado")
@@ -50,4 +52,4 @@ if __name__ == "__main__":
   cliente = Cliente()
   conn = cliente.Conectar()
   if conn:
-    cliente.EnviarArchivo(conn)
+    cliente.EnviarArchivo(conn, "video_recibido.mp4")

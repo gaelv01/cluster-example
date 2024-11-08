@@ -51,13 +51,15 @@ class Broker:
     return self.PermitirConexion("nodo de procesamiento")
 
   # Método para enviar un archivo (video)
-  def EnviarArchivo(self, conn, archivo):
+  def EnviarArchivo(self, conn, archivo, nombre_destino):
     try:
       with open(archivo, "rb") as f:
         data = f.read()
-        # Empaquetar el tamaño del archivo y los datos
+        # Empaquetar el tamaño del archivo, los datos y el nombre del archivo
         file_size = struct.pack("!I", len(data))
-        conn.sendall(file_size + data)
+        file_name = nombre_destino.encode()
+        file_name_size = struct.pack("!I", len(file_name))
+        conn.sendall(file_name_size + file_name + file_size + data)
         print("Archivo enviado correctamente")
     except FileNotFoundError:
       print("Archivo no encontrado")
@@ -67,6 +69,11 @@ class Broker:
   # Método para recibir un archivo
   def RecibirArchivo(self, conn):
     try:
+      # Recibir el tamaño del nombre del archivo
+      file_name_size = conn.recv(4)
+      file_name_size = struct.unpack("!I", file_name_size)[0]
+      # Recibir el nombre del archivo
+      file_name = conn.recv(file_name_size).decode()
       # Recibir el tamaño del archivo
       file_size = conn.recv(4)
       file_size = struct.unpack("!I", file_size)[0]
@@ -76,9 +83,9 @@ class Broker:
         if not packet:
           break
         data += packet # Almacenar el video recibido en el atributo
-      with open("video_recibido.mp4", "wb") as f:
+      with open(file_name, "wb") as f:
         f.write(data)
-        print("Archivo recibido correctamente")
+        print("Archivo recibido correctamente y guardado como", file_name)
         self.video = f.name
       return True
     except Exception as e:
@@ -143,5 +150,5 @@ if __name__ == "__main__":
       broker.DividirVideo()
       for i in range(broker.nodos_conectados):
         conn_nodo = broker.direcciones_nodos[i+1]
-        broker.EnviarArchivo(conn_nodo, broker.partes_video[i])
+        broker.EnviarArchivo(conn_nodo, broker.partes_video[i], f"N_parte_{i+1}.mp4")
         
