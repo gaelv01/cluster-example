@@ -14,6 +14,7 @@
 import socket   # Librería para la conexión entre el broker y los nodos de procesamiento.
 import struct   # Librería para el manejo de datos binarios.
 import cv2      # Librería para el procesamiento de video.
+import numpy as np # Librería para el manejo de arreglos.
 
 class Broker:
 
@@ -132,6 +133,55 @@ class Broker:
     except Exception as e:
       print(f"Error al dividir el video: {e}")
       return None
+  
+  # Método para recibir los frames procesados de los nodos de procesamiento
+  def RecibirFrames(self, conn):
+    frames = []
+    try:
+        while True:
+            packed_size = conn.recv(4)
+            if not packed_size:
+                break
+            
+            frame_size = struct.unpack("!I", packed_size)[0]
+            
+            # Leer el frame completo
+            frame_data = b''
+            while len(frame_data) < frame_size:
+                packet = conn.recv(frame_size - len(frame_data))
+                if not packet:
+                    break
+                frame_data += packet
+                
+            frame = cv2.imdecode(np.frombuffer(frame_data, np.uint8), cv2.IMREAD_COLOR)
+            frames.append(frame)
+        
+        print("Frames procesados recibidos correctamente")
+        return frames
+        
+    except Exception as e:
+        print(f"Error al recibir los frames: {e}")
+        return None
+
+  def UnirFrames(self, frames, video_salida):
+    try:
+        if not frames:
+            print("No hay frames para unir.")
+            return False
+        
+        # Inicializar el escritor de video
+        height, width, _ = frames[0].shape
+        video_writer = cv2.VideoWriter(video_salida, cv2.VideoWriter_fourcc(*'mp4v'), 30, (width, height))
+        
+        for frame in frames:
+            video_writer.write(frame)
+        
+        video_writer.release()
+        print(f"Video completo generado correctamente: {video_salida}")
+        return True
+    except Exception as e:
+        print(f"Error al unir los frames: {e}")
+        return False
 
 if __name__ == "__main__":
   broker = Broker() # Instanciamos el broker
@@ -151,4 +201,12 @@ if __name__ == "__main__":
       for i in range(broker.nodos_conectados):
         conn_nodo = broker.direcciones_nodos[i+1]
         broker.EnviarArchivo(conn_nodo, broker.partes_video[i], f"N_parte_{i+1}.mp4")
-        
+      
+      all_frames = []
+      for i in range(broker.nodos_conectados):
+        conn_nodo = broker.direcciones_nodos[i+1]
+        frames = broker.RecibirFrames(conn_nodo)
+        if frames:
+          all_frames.extend(frames)
+      
+      broker.UnirFrames(all_frames, "video_completo.mp4")

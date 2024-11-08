@@ -66,22 +66,35 @@ class NodoProcesamiento:
     if not self.video:
       print("No se ha recibido el video")
       return False
-    
     frames = []
     try:
       cap = cv2.VideoCapture(self.video)
-      while True:
+      while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
           break
-        frames.append(frame)
+        # Codificar el frame en un formato comprimido
+        _, buffer = cv2.imencode(".jpg", frame)
+        frames.append(buffer.tobytes())
+        
       cap.release()
-      print(f"Video descompuesto en {len(frames)} frames")
+      print("Video descompuesto correctamente")
       return frames
     except Exception as e:
       print(f"Error al descomponer el video: {e}")
       return False
-    
+  
+  # Método para enviar los frames procesados al broker
+  def EnviarFrames(self, conn, frames):
+    try:
+      for frame in frames:
+        frame_size = struct.pack("!I", len(frame))
+        conn.sendall(frame_size + frame)
+      print("Frames enviados correctamente")
+      return True
+    except Exception as e:
+      print(f"Error al enviar los frames: {e}")
+      return False
     
 if __name__ == "__main__":
   nodo = NodoProcesamiento()
@@ -90,4 +103,6 @@ if __name__ == "__main__":
     archivo_recibido = nodo.RecibirArchivo(conn)
     if archivo_recibido:
       frames = nodo.DescomponerVideo()
+      if frames:
+        nodo.EnviarFrames(conn, frames)
     
