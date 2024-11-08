@@ -10,7 +10,8 @@
 
 # IMPORTACIÓN DE LIBRERÍAS
 import socket   # Librería para la conexión entre el nodo de procesamiento y el broker.
-import struct   # Librería para el manejo de datos binarios.
+import struct   # Librería para el manejo de datos binarios.  
+import cv2     # Librería para el procesamiento de video.
 
 class NodoProcesamiento:
 
@@ -59,11 +60,34 @@ class NodoProcesamiento:
       print(f"Error al recibir el archivo: {e}")
       self.video = None
       return False
+  
+  # Método para descomponer el video en frames
+  def DescomponerVideo(self):
+    if not self.video:
+      print("No se ha recibido el video")
+      return False
+    
+    frames = []
+    try:
+      cap = cv2.VideoCapture(self.video)
+      while True:
+        ret, frame = cap.read()
+        if not ret:
+          break
+        frames.append(frame)
+      cap.release()
+      print(f"Video descompuesto en {len(frames)} frames")
+      return frames
+    except Exception as e:
+      print(f"Error al descomponer el video: {e}")
+      return False
     
     
 if __name__ == "__main__":
   nodo = NodoProcesamiento()
   conn = nodo.Conectar()
   if conn:
-    nodo.RecibirArchivo(conn)
-    conn.close()
+    archivo_recibido = nodo.RecibirArchivo(conn)
+    if archivo_recibido:
+      frames = nodo.DescomponerVideo()
+    
