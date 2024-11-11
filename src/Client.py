@@ -46,6 +46,33 @@ class Cliente:
       print("Archivo no encontrado")
     except Exception as e:
       print(f"Error al enviar el archivo: {e}")
+
+  # Método para recibir un archivo
+  def RecibirArchivo(self, conn):
+    try:
+      # Recibir el tamaño del nombre del archivo
+      file_name_size = conn.recv(4)
+      file_name_size = struct.unpack("!I", file_name_size)[0]
+      # Recibir el nombre del archivo
+      file_name = conn.recv(file_name_size).decode()
+      # Recibir el tamaño del archivo
+      file_size = conn.recv(4)
+      file_size = struct.unpack("!I", file_size)[0]
+      data = b''
+      while len(data) < file_size:
+        packet = conn.recv(4096)
+        if not packet:
+          break
+        data += packet # Almacenar el video recibido en el atributo
+      with open(file_name, "wb") as f:
+        f.write(data)
+        print("Archivo recibido correctamente y guardado como", file_name)
+        self.video = f.name
+      return True
+    except Exception as e:
+      print(f"Error al recibir el archivo: {e}")
+      self.video = None
+      return False
     
 
 if __name__ == "__main__":
@@ -53,3 +80,5 @@ if __name__ == "__main__":
   conn = cliente.Conectar()
   if conn:
     cliente.EnviarArchivo(conn, "video_recibido.mp4")
+    cliente.RecibirArchivo(conn)
+    

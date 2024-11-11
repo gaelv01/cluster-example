@@ -209,4 +209,7 @@ if __name__ == "__main__":
         if frames:
           all_frames.extend(frames)
       
-      broker.UnirFrames(all_frames, "video_completo.mp4")
+      video_completo = broker.UnirFrames(all_frames, "video_completo.mp4")
+      if video_completo:
+        broker.EnviarArchivo(conn, "video_completo.mp4", "final.mp4")
+      
