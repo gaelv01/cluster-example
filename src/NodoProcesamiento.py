@@ -12,6 +12,7 @@
 import socket   # Librería para la conexión entre el nodo de procesamiento y el broker.
 import struct   # Librería para el manejo de datos binarios.  
 import cv2     # Librería para el procesamiento de video.
+import numpy as np # Librería para el manejo de arreglos.
 
 class NodoProcesamiento:
 
@@ -84,6 +85,21 @@ class NodoProcesamiento:
       print(f"Error al descomponer el video: {e}")
       return False
   
+  # Método para aplicar un filtro monocromático a cada frame
+  def AplicarFiltro(self, frames):
+    if not frames:
+      print("No se han recibido los frames")
+      return False
+    try:
+      for i, frame in enumerate(frames):
+        frame = cv2.imdecode(np.frombuffer(frame, np.uint8), cv2.IMREAD_COLOR)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frames[i] = cv2.imencode(".jpg", frame)[1].tobytes()
+      print("Filtro aplicado correctamente")
+      return frames
+    except Exception as e:
+      print(f"Error al aplicar el filtro: {e}")
+  
   # Método para enviar los frames procesados al broker
   def EnviarFrames(self, conn, frames):
     try:
@@ -104,5 +120,6 @@ if __name__ == "__main__":
     if archivo_recibido:
       frames = nodo.DescomponerVideo()
       if frames:
-        nodo.EnviarFrames(conn, frames)
+        mono_frames = nodo.AplicarFiltro(frames)
+        nodo.EnviarFrames(conn, mono_frames)
     
